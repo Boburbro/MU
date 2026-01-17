@@ -1,0 +1,102 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Register</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">Simple Chat</div>
+            <div class="muted small">Create account</div>
+        </div>
+
+        <div class="form-grid">
+            <h2>Register</h2>
+            <p class="muted">Choose a username and password to get started</p>
+
+            <form id="reg" method="post" action="/register" class="form-grid">
+                <label>First name
+                    <input name="first_name" required />
+                </label>
+
+                <label>Last name
+                    <input name="last_name" required />
+                </label>
+
+                <label>Username
+                    <input id="username" name="username" required minlength="5" maxlength="32" />
+                    <span id="username-status" class="small" style="margin-left:0.5rem;color:#666"></span>
+                </label>
+
+                <label>Password
+                    <input name="password" type="password" required minlength="6" maxlength="128" />
+                </label>
+
+                <div class="row">
+                    <button id="submit" type="submit" disabled>Register</button>
+                    <a class="small" href="/">Already have an account?</a>
+                </div>
+                <div id="reg-error" class="notice" style="display:none"></div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const usernameInput = document.getElementById('username');
+        const status = document.getElementById('username-status');
+        const submitBtn = document.getElementById('submit');
+        const regForm = document.getElementById('reg');
+        const regError = document.getElementById('reg-error');
+        let timeout = null;
+
+        usernameInput.addEventListener('input', (e) => {
+            regError.style.display = 'none';
+            status.textContent = '';
+            submitBtn.disabled = true;
+            if (timeout) clearTimeout(timeout);
+            const val = e.target.value.trim();
+            if (!val) {
+                status.textContent = 'required';
+                status.style.color = '#c00';
+                return;
+            }
+            if (val.length < 5 || val.length > 32) {
+                status.textContent = 'length 5-32';
+                status.style.color = '#c00';
+                return;
+            }
+            // debounce
+            timeout = setTimeout(async () => {
+                try {
+                    const res = await fetch('/username-available?username=' + encodeURIComponent(val));
+                    const data = await res.json();
+                    if (data.available) {
+                        status.textContent = 'available';
+                        status.style.color = '#0a0';
+                        submitBtn.disabled = false;
+                    } else {
+                        status.textContent = 'taken';
+                        status.style.color = '#c00';
+                        submitBtn.disabled = true;
+                    }
+                } catch (err) {
+                    status.textContent = 'error';
+                    status.style.color = '#c00';
+                    submitBtn.disabled = true;
+                }
+            }, 400);
+        });
+
+        regForm.addEventListener('submit', async (e) => {
+            regError.style.display = 'none';
+        });
+    </script>
+    <p>Already have an account? <a href="/">Login</a></p>
+</body>
+
+</html>

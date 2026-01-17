@@ -1,0 +1,71 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Login</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">Simple Chat</div>
+            <div class="muted small">FastAPI Chat • Local demo</div>
+        </div>
+
+        <div class="form-grid">
+            <h2>Welcome back</h2>
+            <p class="muted">Sign in to continue to Simple Chat</p>
+
+            <form id="login" class="form-grid">
+                <label>Username
+                    <input id="username" type="text" required minlength="5" maxlength="32" />
+                </label>
+
+                <label>Password
+                    <input id="password" type="password" required maxlength="128" />
+                </label>
+
+                <div class="row">
+                    <button type="submit">Sign in</button>
+                    <a class="small" href="/static/register.html">Create an account</a>
+                </div>
+                <div id="error" class="notice" style="display:none"></div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('login');
+        const error = document.getElementById('error');
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            error.style.display = 'none';
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const fd = new URLSearchParams();
+            fd.append('grant_type', 'password');
+            fd.append('username', username);
+            fd.append('password', password);
+
+            try {
+                const res = await fetch('/token', { method: 'POST', body: fd, credentials: 'same-origin' });
+                if (!res.ok) {
+                    const text = await res.text();
+                    error.textContent = text || 'Login failed';
+                    error.style.display = 'block';
+                    return;
+                }
+                // on success redirect to home (cookie is set by server)
+                location.href = '/home';
+            } catch (err) {
+                error.textContent = err.message || 'Network error';
+                error.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+
+</html>

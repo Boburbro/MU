@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Simple Chat</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 1rem;
+        }
+
+        #messages {
+            border: 1px solid #ddd;
+            padding: 1rem;
+            height: 300px;
+            overflow: auto;
+        }
+
+        #form {
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Simple Chat (FastAPI)</h2>
+    <div id="messages"></div>
+    <form id="form">
+        <input id="input" autocomplete="off" placeholder="Type a message" style="width:70%" />
+        <button>Send</button>
+    </form>
+
+    <script>
+        const messages = document.getElementById('messages');
+        const input = document.getElementById('input');
+        const form = document.getElementById('form');
+
+        const wsProtocol = location.protocol === 'https:' ? 'wss' : 'ws';
+        const ws = new WebSocket(wsProtocol + '://' + location.host + '/ws');
+
+        ws.addEventListener('message', (ev) => {
+            const el = document.createElement('div');
+            el.textContent = ev.data;
+            messages.appendChild(el);
+            messages.scrollTop = messages.scrollHeight;
+        });
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            if (!input.value) return;
+            ws.send(input.value);
+            input.value = '';
+        });
+    </script>
+</body>
+
+</html>

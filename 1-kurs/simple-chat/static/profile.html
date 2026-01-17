@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Profile</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">Simple Chat</div>
+            <div class="muted small">Manage your profile</div>
+        </div>
+
+        <div class="form-grid">
+            <h2>Profile</h2>
+            <div id="profile-message" class="notice" style="display: none;"></div>
+
+            <form id="profile-form" class="form-grid">
+                <label for="first_name">Name
+                    <input id="first_name" name="first_name" type="text" placeholder="First name" />
+                </label>
+
+                <label for="last_name">Surname
+                    <input id="last_name" name="last_name" type="text" placeholder="Last name" />
+                </label>
+
+                <label for="bio">Bio
+                    <textarea id="bio" name="bio" rows="4" placeholder="Tell something"></textarea>
+                </label>
+
+                <div class="row" style="justify-content: space-between;">
+                    <a class="small" href="/home">Back to chat</a>
+                    <button type="submit">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const messageEl = document.getElementById('profile-message');
+        const form = document.getElementById('profile-form');
+
+        function showMessage(text, isError = true) {
+            messageEl.textContent = text;
+            messageEl.style.display = 'block';
+            messageEl.style.color = isError ? '#d9534f' : '#28a745';
+        }
+
+        async function loadProfile() {
+            try {
+                const res = await fetch('/me', { credentials: 'include' });
+                if (!res.ok) throw new Error('Unable to load profile');
+                const data = await res.json();
+                document.getElementById('first_name').value = data.first_name || '';
+                document.getElementById('last_name').value = data.last_name || '';
+                document.getElementById('bio').value = data.bio || '';
+            } catch (err) {
+                showMessage(err.message);
+            }
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(form);
+            try {
+                const res = await fetch('/me', {
+                    method: 'PATCH',
+                    body: formData,
+                    credentials: 'include',
+                });
+                if (!res.ok) {
+                    const err = await res.json().catch(() => ({}));
+                    throw new Error(err.detail || 'Failed to update');
+                }
+                showMessage('Saved', false);
+            } catch (err) {
+                showMessage(err.message || 'Failed to update');
+            }
+        });
+
+        loadProfile();
+    </script>
+</body>
+
+</html>

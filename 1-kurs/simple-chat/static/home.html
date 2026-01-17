@@ -1,0 +1,245 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Direct Messages</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+
+<body class="app-body">
+    <div class="app-shell">
+        <header class="topbar">
+            <div class="brand">Simple Chat</div>
+            <div class="top-actions">
+                <span id="user-name" class="chip">Loading...</span>
+                <button id="profile-btn" class="ghost">Profile</button>
+                <button id="logout" class="solid">Logout</button>
+            </div>
+        </header>
+
+        <div class="layout">
+            <aside class="sidebar">
+                <div class="sidebar-header">
+                    <div class="muted">Direct messages</div>
+                    <input id="user-search" type="text" placeholder="Search users" />
+                </div>
+                <div id="user-list" class="user-list"></div>
+            </aside>
+
+            <main class="conversation">
+                <div class="conversation-header">
+                    <div>
+                        <div id="conversation-name" class="title">Select a user</div>
+                        <a id="conversation-profile" class="muted small" href="#" style="display:none">View profile</a>
+                    </div>
+                    <div id="conversation-status" class="pill">Idle</div>
+                </div>
+
+                <div id="messages" class="messages"></div>
+
+                <form id="composer" class="composer">
+                    <input id="message-input" type="text" placeholder="Type a private message" autocomplete="off" />
+                    <button type="submit">Send</button>
+                </form>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let selectedUser = null;
+        let pollTimer = null;
+        const lastMessageIds = {};
+
+        // simple beep sounds (send/receive)
+        const sendSound = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAABCxAgAEABAAZGF0YQAAAAA=');
+        const recvSound = new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAABCxAgAEABAAZGF0YQAAAAA=');
+
+        const userNameEl = document.getElementById('user-name');
+        const userListEl = document.getElementById('user-list');
+        const messagesEl = document.getElementById('messages');
+        const conversationNameEl = document.getElementById('conversation-name');
+        const conversationProfileEl = document.getElementById('conversation-profile');
+        const conversationStatusEl = document.getElementById('conversation-status');
+        const searchEl = document.getElementById('user-search');
+        const composer = document.getElementById('composer');
+        const messageInput = document.getElementById('message-input');
+
+        function setStatus(text) {
+            conversationStatusEl.textContent = text;
+        }
+
+        function renderUsers(list) {
+            userListEl.innerHTML = '';
+            list.forEach((u) => {
+                const item = document.createElement('div');
+                item.className = 'user-row';
+                item.dataset.username = u.username;
+                const name = u.first_name || u.last_name ? `${u.first_name || ''} ${u.last_name || ''}`.trim() : u.username;
+                item.innerHTML = `
+                    <div>
+                        <div class="user-name">${name || u.username}</div>
+                        <div class="user-meta">@${u.username}${u.bio ? ' • ' + u.bio : ''}</div>
+                    </div>
+                    ${u.unread && u.unread > 0 ? `<span class="badge">${u.unread}</span>` : ''}
+                `;
+                item.addEventListener('click', () => selectUser(u));
+                userListEl.appendChild(item);
+            });
+            if (!list.length) {
+                const empty = document.createElement('div');
+                empty.className = 'muted small';
+                empty.style.padding = '12px';
+                empty.textContent = 'No users yet.';
+                userListEl.appendChild(empty);
+            }
+        }
+
+        async function loadUsers() {
+            const res = await fetch('/users', { credentials: 'include' });
+            if (!res.ok) {
+                await logout();
+                return;
+            }
+            const data = await res.json();
+            renderUsers(data);
+            highlightActive();
+            return data;
+        }
+
+        async function loadMe() {
+            const res = await fetch('/me', { credentials: 'include' });
+            if (!res.ok) {
+                await logout();
+                return;
+            }
+            currentUser = await res.json();
+            const name = currentUser.first_name || currentUser.last_name
+                ? `${currentUser.first_name || ''} ${currentUser.last_name || ''}`.trim()
+                : currentUser.username;
+            userNameEl.textContent = name;
+        }
+
+        async function fetchMessages(username) {
+            if (!username) return [];
+            const res = await fetch(`/messages/${encodeURIComponent(username)}?limit=200`, { credentials: 'include' });
+            if (!res.ok) return [];
+            return res.json();
+        }
+
+        function renderMessages(items) {
+            messagesEl.innerHTML = '';
+            if (selectedUser) {
+                const last = items[items.length - 1];
+                if (last && last.id !== lastMessageIds[selectedUser.username]) {
+                    // play receive sound if the newest message is from the other user
+                    if (last.sender_id !== currentUser.id) recvSound.play().catch(() => { });
+                    lastMessageIds[selectedUser.username] = last.id;
+                }
+            }
+            items.forEach((m) => {
+                const mine = m.sender_id === currentUser.id;
+                const row = document.createElement('div');
+                row.className = 'message-row ' + (mine ? 'mine' : 'theirs');
+
+                const bubble = document.createElement('div');
+                bubble.className = 'bubble';
+                bubble.textContent = m.content;
+
+                const meta = document.createElement('div');
+                meta.className = 'meta';
+                const ts = new Date(m.created_at).toLocaleTimeString();
+                const status = mine ? (m.read_at ? 'Seen' : 'Sent') : '';
+                meta.textContent = `${mine ? 'You' : selectedUser.username} • ${ts}${status ? ' • ' + status : ''}`;
+
+                row.appendChild(bubble);
+                row.appendChild(meta);
+                messagesEl.appendChild(row);
+            });
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+        }
+
+        async function selectUser(user) {
+            selectedUser = user;
+            highlightActive();
+            conversationNameEl.textContent = user.first_name || user.last_name
+                ? `${user.first_name || ''} ${user.last_name || ''}`.trim()
+                : user.username;
+            conversationProfileEl.style.display = 'inline';
+            conversationProfileEl.href = `/user/${encodeURIComponent(user.username)}`;
+            setStatus('Loading...');
+            const msgs = await fetchMessages(user.username);
+            renderMessages(msgs);
+            setStatus('Live');
+            loadUsers();
+            restartPoll();
+        }
+
+        function highlightActive() {
+            document.querySelectorAll('.user-row').forEach((row) => {
+                row.classList.toggle('active', selectedUser && row.dataset.username === selectedUser.username);
+            });
+        }
+
+        function restartPoll() {
+            if (pollTimer) clearInterval(pollTimer);
+            pollTimer = setInterval(async () => {
+                if (!selectedUser) return;
+                const msgs = await fetchMessages(selectedUser.username);
+                renderMessages(msgs);
+            }, 4000);
+        }
+
+        async function logout() {
+            await fetch('/logout', { method: 'POST', credentials: 'include' });
+            location.href = '/';
+        }
+
+        composer.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!selectedUser) return;
+            const text = messageInput.value.trim();
+            if (!text) return;
+            const fd = new FormData();
+            fd.append('content', text);
+            const res = await fetch(`/messages/${encodeURIComponent(selectedUser.username)}`, {
+                method: 'POST',
+                body: fd,
+                credentials: 'include',
+            });
+            if (res.ok) {
+                messageInput.value = '';
+                sendSound.play().catch(() => { });
+                const msgs = await fetchMessages(selectedUser.username);
+                renderMessages(msgs);
+            }
+        });
+
+        document.getElementById('logout').addEventListener('click', logout);
+        document.getElementById('profile-btn').addEventListener('click', () => {
+            location.href = '/profile';
+        });
+
+        searchEl.addEventListener('input', async (e) => {
+            const query = e.target.value.toLowerCase();
+            const res = await fetch('/users', { credentials: 'include' });
+            if (!res.ok) return;
+            const data = await res.json();
+            const filtered = data.filter((u) =>
+                u.username.toLowerCase().includes(query) ||
+                (u.first_name && u.first_name.toLowerCase().includes(query)) ||
+                (u.last_name && u.last_name.toLowerCase().includes(query))
+            );
+            renderUsers(filtered);
+        });
+
+        (async function init() {
+            await loadMe();
+            await loadUsers();
+        })();
+    </script>
+</body>
+
+</html>
