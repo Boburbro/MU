@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+
+{% block title %}Ro'yxatdan o'tish - Kitobxona{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center align-items-center" style="min-height: 60vh;">
+    <div class="col-md-6 col-lg-5">
+        <div class="card p-4 shadow-lg">
+            <div class="text-center mb-4">
+                <h2 class="fw-bold text-primary">Ro'yxatdan o'tish</h2>
+                <p class="text-muted">Yangi hisob yarating</p>
+            </div>
+            <form method="post" id="registerForm">
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                {% endif %}
+
+                {% for field in form %}
+                <div class="mb-3">
+                    <label for="{{ field.id_for_label }}" class="form-label fw-bold">{{ field.label }}</label>
+                    {{ field }}
+
+                    {% if field.name == 'username' %}
+                    <div id="usernameStatus" class="mt-1 small"></div>
+                    {% endif %}
+
+                    {% if field.help_text %}
+                    <small class="form-text text-muted d-block">{{ field.help_text }}</small>
+                    {% endif %}
+                    {% if field.errors %}
+                    <div class="text-danger small mt-1">{{ field.errors }}</div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+
+                <div class="d-grid mt-4">
+                    <button type="submit" class="btn btn-primary btn-lg">Ro'yxatdan o'tish</button>
+                </div>
+            </form>
+            <div class="text-center mt-3">
+                <p>Allaqachon hisobingiz bormi? <a href="{% url 'login' %}" class="fw-bold">Kirish</a></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Add bootstrap classes to form fields
+    document.querySelectorAll('input').forEach(input => {
+        if (!input.classList.contains('form-control')) {
+            input.classList.add('form-control');
+        }
+    });
+
+    // Real-time username availability check
+    const usernameInput = document.getElementById('id_username');
+    const usernameStatus = document.getElementById('usernameStatus');
+    let checkTimeout;
+
+    usernameInput.addEventListener('input', function () {
+        clearTimeout(checkTimeout);
+        const username = this.value.trim();
+
+        if (username.length < 3) {
+            usernameStatus.innerHTML = '';
+            return;
+        }
+
+        usernameStatus.innerHTML = '<span class="text-muted">Tekshirilmoqda...</span>';
+
+        checkTimeout = setTimeout(() => {
+            fetch(`/api/check-username/?username=${encodeURIComponent(username)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.available === true) {
+                        usernameStatus.innerHTML = '<span class="text-success">✓ ' + data.message + '</span>';
+                    } else if (data.available === false) {
+                        usernameStatus.innerHTML = '<span class="text-danger">✗ ' + data.message + '</span>';
+                    }
+                })
+                .catch(error => {
+                    usernameStatus.innerHTML = '';
+                });
+        }, 500);
+    });
+</script>
+{% endblock %}

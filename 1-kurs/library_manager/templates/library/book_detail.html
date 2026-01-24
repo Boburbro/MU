@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ book.title }}{% endblock %}
+
+{% block content %}
+<div class="card shadow-lg p-3 mb-5 bg-body rounded">
+    <div class="row g-0">
+        <div class="col-md-4">
+            {% if book.image %}
+            <img src="{{ book.image.url }}" class="img-fluid rounded-start w-100"
+                style="object-fit: cover; height: 100%; max-height: 500px;" alt="{{ book.title }}">
+            {% else %}
+            <div class="d-flex align-items-center justify-content-center bg-light h-100 text-muted"
+                style="min-height: 400px;">
+                <h3>Rasm yo'q</h3>
+            </div>
+            {% endif %}
+        </div>
+        <div class="col-md-8">
+            <div class="card-body p-4 p-lg-5">
+                <div class="d-flex justify-content-between align-items-start">
+                    <h1 class="card-title fw-bold mb-3 display-5">{{ book.title }}</h1>
+                    <span class="badge bg-secondary fs-6">{{ book.get_genre_display }}</span>
+                </div>
+
+                <h4 class="text-muted mb-4">{{ book.author }}</h4>
+
+                <div class="mb-4">
+                    <h6 class="fw-bold text-uppercase text-secondary small">ISBN</h6>
+                    <p class="font-monospace">{{ book.isbn }}</p>
+                </div>
+
+                <div class="mb-4">
+                    <h6 class="fw-bold text-uppercase text-secondary small">Tavsif</h6>
+                    <p class="card-text">{{ book.description|default:"Tavsif mavjud emas." }}</p>
+                </div>
+
+                <div class="d-flex align-items-center mb-5">
+                    <div class="me-4">
+                        <span class="d-block fw-bold text-uppercase text-secondary small">Jami soni</span>
+                        <span class="fs-4">{{ book.quantity }}</span>
+                    </div>
+                    <div>
+                        <span class="d-block fw-bold text-uppercase text-secondary small">Mavjud</span>
+                        <span class="fs-4 {% if book.available_quantity > 0 %}text-success{% else %}text-danger{% endif %}">{{ book.available_quantity }}</span>
+                    </div>
+                </div>
+
+                <div class="d-grid gap-2">
+                    {% if active_loan %}
+                    <button class="btn btn-secondary btn-lg" disabled>
+                        ✅ Siz bu kitobni olgansiz
+                    </button>
+                    <p class="text-center text-muted small mt-2">Qaytarish muddati: {{ active_loan.return_date|date:"d.m.Y" }}</p>
+                    {% elif book.available_quantity > 0 %}
+                    <button type="button" class="btn btn-success btn-lg" data-bs-toggle="modal"
+                        data-bs-target="#borrowModal">
+                        Kitobni Ijaraga Olish
+                    </button>
+                    {% else %}
+                    <button class="btn btn-danger btn-lg" disabled>
+                        🚫 Hozir mavjud emas
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Borrow Confirmation Modal -->
+<div class="modal fade" id="borrowModal" tabindex="-1" aria-labelledby="borrowModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="borrowModalLabel">Tasdiqlash</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p><strong>{{ book.title }}</strong> kitobini ijaraga olmoqchimisiz?</p>
+                <p class="text-muted small">Eslatma: Kitobni 14 kun ichida qaytarishingiz kerak.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bekor qilish</button>
+                <form action="{% url 'borrow_book' pk=book.pk %}" method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-success">Ha, olaman</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

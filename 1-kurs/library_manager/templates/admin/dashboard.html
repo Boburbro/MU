@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold">Admin Dashboard</h2>
+    <a href="/admin/library/book/add/" class="btn btn-success">+ Yangi Kitob Qo'shish</a>
+</div>
+
+<div class="row g-4 mb-5">
+    <div class="col-md-4">
+        <div class="card bg-primary text-white h-100">
+            <div class="card-body">
+                <h6 class="card-subtitle mb-2 opacity-75">Jami Kitoblar</h6>
+                <h2 class="card-title fw-bold display-4">{{ total_books }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-warning text-dark h-100">
+            <div class="card-body">
+                <h6 class="card-subtitle mb-2 opacity-75">Ijaradagi Kitoblar</h6>
+                <h2 class="card-title fw-bold display-4">{{ active_loans }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-danger text-white h-100">
+            <div class="card-body">
+                <h6 class="card-subtitle mb-2 opacity-75">Muddati o'tgan</h6>
+                <h2 class="card-title fw-bold display-4">{{ overdue_loans }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h5 class="mb-0 fw-bold">Admin Boshqaruvi</h5>
+            </div>
+            <div class="card-body">
+                <p>To'liq boshqaruv uchun Django Admin paneliga o'ting.</p>
+                <a href="/admin/" class="btn btn-outline-primary">Django Admin Panelga O'tish &rarr;</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
