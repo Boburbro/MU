@@ -210,3 +210,120 @@ print(any(toza_mi(s) for s in sozlar))    # True
 
 # Лямбда `toza_mi` проверяет с помощью `all(...)`, что все символы в слове являются буквами. `filter()` оставляет только «чистые» слова (только буквы). `any(...)` проверяет, есть ли хотя бы одно такое слово в списке.
 ```
+
+# 2-Bo'lim - Kod yozing
+#### Har bir topshiriq talabini qanoatlantiradigan Python kodi yozing. Berilgan qatorlardan foydalaning.
+
+## 1-savol  (5 ball)
+### `count_vowels(matn)` nomli funksiya yozing. U satrni qabul qilib, undagi unli harflar (a, e, i, o, u — katta-kichik farqsiz) sonini qaytarsin. Funksiya ichida `any()` yoki `lambda` dan foydalaning.
+### Misol: `count_vowels('Salom Dunyo')` → 4
+
+```python
+def count_vowels(matn):
+    count = 0
+    vowels = "aeoui"
+
+
+    for ch in matn:
+        if ch.lower() in vowels:
+            count += 1 
+
+    return count
+
+counter = lambda matn: len([
+    ch for ch in matn if ch.lower() in "aeoui"
+])
+
+
+print(count_vowels("Salom DunyO"))
+print(counter("Salom DunyO"))
+
+# count_vowels(matn) funksiyasi matndagi unli harflar sonini sanaydi (a, e, i, o, u).
+# Bu yerda `ch.lower()` orqali harfni kichik qilib olib, unli harflar ro'yxatida bor-yo'qligini tekshiramiz.
+# `counter` esa lambda yordamida unli harflarni ajratib, ularning sonini `len()` bilan topadi.
+
+# Функция count_vowels(matn) считает количество гласных букв в строке (a, e, i, o, u).
+# С помощью `ch.lower()` переводим символ в нижний регистр и проверяем, является ли он гласной.
+# `counter` — это лямбда, которая собирает гласные и считает их количество через `len()`.
+
+```
+
+## 2-savol  (5 ball)
+### `safe_convert(qiymat)` nomli funksiya yozing. U `try/except` yordamida qiymatni butun songa o'tkazishga harakat qilsin. Agar o'tkazib bo'lmasa, `0` qaytarsin.
+### Misol: `safe_convert('42')` → 42    |    `safe_convert('abc')` → 0
+
+```python
+def safe_convert(qiymat):
+    try:
+        return int(qiymat)
+    except (ValueError, TypeError):
+        return 0
+
+
+print(safe_convert('42'))
+print(safe_convert('abc'))
+
+# safe_convert(qiymat) qiymatni `int()` orqali butun songa o'tkazadi.
+# Agar qiymat son bo'lmasa (yoki noto'g'ri tur bo'lsa), xato ushlanadi va 0 qaytariladi.
+
+# safe_convert(qiymat) пытается преобразовать значение в целое число через `int()`.
+# Если значение нельзя преобразовать (или передан неверный тип), ошибка перехватывается и возвращается 0.
+```
+
+## 3-savol  (5 ball)
+### `lambda` va `all()` yordamida quyidagi ro'yxatdan faqat barcha belgilari harf bo'lgan so'zlarni filtrlang. Natijani `toza_sozlar` o'zgaruvchisiga saqlang va chop eting.
+### `sozlar = ['salom', 'py3on', 'dunyo', 'k0d', 'imtihon']`
+### Kutilgan natija: `['salom', 'dunyo', 'imtihon']`
+
+### 1) `filter()` ishlashiga sodda misol (final.py dagi example)
+
+```python
+toza_sonlar = list(filter(lambda i: i % 2 == 0, [1, 2, 3, 4]))
+print(toza_sonlar)  # [2, 4]
+
+# Batafsil (UZ):
+# `filter(funksiya, iterable)` — 2 ta argument qabul qiladi:
+#   1) funksiya (yoki lambda): har bir element uchun True/False qaytaradi
+#   2) iterable: ro'yxat/tuple/str kabi elementlar ketma-ketligi
+# `filter(...)` o'zi natijani ro'yxat qilib bermaydi, iterator qaytaradi, shuning uchun `list(...)` bilan ro'yxatga aylantirdik.
+# Bu misolda lambda `i % 2 == 0` — son juft bo'lsa True, aks holda False.
+# filter qanday ishlaydi:
+#   i=1  -> 1%2==0 False -> tashlab yuboradi
+#   i=2  -> 2%2==0 True  -> qoldiradi
+#   i=3  -> 3%2==0 False -> tashlab yuboradi
+#   i=4  -> 4%2==0 True  -> qoldiradi
+# Natija: [2, 4]
+
+# Подробно (RU):
+# `filter(функция, iterable)` принимает 2 аргумента:
+#   1) функция (или лямбда): для каждого элемента возвращает True/False
+#   2) iterable: последовательность элементов (list/tuple/строка и т.д.)
+# `filter(...)` возвращает итератор, поэтому мы оборачиваем в `list(...)`, чтобы получить список.
+# В примере лямбда `i % 2 == 0` — True для чётных чисел, иначе False.
+# Как работает filter:
+#   i=1  -> False -> отбрасывает
+#   i=2  -> True  -> оставляет
+#   i=3  -> False -> отбрасывает
+#   i=4  -> True  -> оставляет
+# Результат: [2, 4]
+```
+
+### 2) Asosiy vazifa: so'zlarni filtrlash (lambda + `all()`)
+
+```python
+sozlar = ['salom', 'py3on', 'dunyo', 'k0d', 'imtihon']
+
+toza_sozlar = list(filter(lambda soz: all(
+    ch.isalpha() for ch in soz
+), sozlar))
+
+print(toza_sozlar)  # ['salom', 'dunyo', 'imtihon']
+
+# `filter()` ro'yxatdagi elementlarni shart bo'yicha tanlab beradi.
+# Bu yerda `all(ch.isalpha() for ch in soz)` — so'z ichidagi hamma belgilar harf bo'lsa True bo'ladi.
+# Shuning uchun ichida raqam bor so'zlar ('py3on', 'k0d') tashlab yuboriladi.
+
+# `filter()` отбирает элементы списка по условию.
+# Здесь `all(ch.isalpha() for ch in soz)` возвращает True, только если все символы в слове — буквы.
+# Поэтому слова с цифрами ('py3on', 'k0d') отфильтровываются.
+```
