@@ -16,5 +16,5 @@
 # file.close - close the file
 #
 # with open - automatically closes the file after the block of code is executed
-#
 # #
+
